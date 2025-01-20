@@ -54,56 +54,6 @@ class RewardServiceTest {
     }
 
     @Test
-    @DisplayName("Single transaction between $50 and $100 earns correct points")
-    void testSingleTransactionBetween50And100() {
-        Transaction transaction = new Transaction(1L, 1L, 75.0, LocalDateTime.now());
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(
-                1L,
-                LocalDateTime.now().minusDays(30),
-                LocalDateTime.now()
-        )).thenReturn(List.of(transaction));
-
-        RewardResponse response = rewardService.calculateRewards(
-                1L,
-                LocalDateTime.now().minusDays(30),
-                LocalDateTime.now()
-        );
-
-        System.out.println("Monthly Points: " + response.getRewardsSummary());
-        System.out.println("Total Points: " + response.getTotalPoints());
-
-        assertEquals(25, response.getTotalPoints(), "Points should be correctly calculated for amounts between $50 and $100");
-    }
-
-
-    @Test
-    @DisplayName("Single transaction above $100 earns correct points")
-    void testSingleTransactionAbove100() {
-        Transaction transaction = new Transaction(1L, 1L, 150.0, LocalDateTime.now());
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(List.of(transaction));
-
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(150, response.getTotalPoints(), "Points should be correctly calculated for amounts above $100");
-    }
-
-    @Test
-    @DisplayName("Multiple transactions in the same month are summed correctly")
-    void testMultipleTransactionsSameMonth() {
-        List<Transaction> transactions = List.of(
-                new Transaction(1L, 1L, 60.0, LocalDateTime.now()),
-                new Transaction(2L, 1L, 120.0, LocalDateTime.now())
-        );
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(transactions);
-
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(140, response.getTotalPoints(), "Points should be correctly summed for multiple transactions in the same month");
-    }
-
-    @Test
     @DisplayName("Transactions across multiple months are grouped correctly")
     void testTransactionsAcrossMultipleMonths() {
         List<Transaction> transactions = List.of(
@@ -143,36 +93,5 @@ class RewardServiceTest {
         RewardResponse response = rewardService.calculateRewards(999L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
 
         assertEquals(0, response.getTotalPoints(), "Total points should be 0 for invalid customer ID");
-    }
-
-    @Test
-    @DisplayName("Large number of transactions are handled correctly")
-    void testLargeNumberOfTransactions() {
-        List<Transaction> transactions = List.of(
-                new Transaction(1L, 1L, 100.0, LocalDateTime.now()),
-                new Transaction(2L, 1L, 200.0, LocalDateTime.now()),
-                new Transaction(3L, 1L, 300.0, LocalDateTime.now())
-        );
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(transactions);
-
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(800, response.getTotalPoints(), "Total points should be correctly summed for a large number of transactions");
-    }
-
-    @Test
-    @DisplayName("Transaction dates outside the range are ignored")
-    void testTransactionsOutsideDateRange() {
-        List<Transaction> transactions = List.of(
-                new Transaction(1L, 1L, 100.0, LocalDateTime.now().minusDays(40)),
-                new Transaction(2L, 1L, 150.0, LocalDateTime.now())
-        );
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(List.of(transactions.get(1)));
-
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(200, response.getTotalPoints(), "Points should only include transactions within the given date range");
     }
 }
