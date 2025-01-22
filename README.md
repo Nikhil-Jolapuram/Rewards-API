@@ -92,6 +92,6 @@ cd Rewards-API-backend
 
 ## Database
 
-![Alt text](./Rewards-API-backend/screenshots/db-image1.jpg)
-![Alt text](./Rewards-API-backend/screenshots/db-image2.jpg)
-![Alt text](./Rewards-API-backend/screenshots/db-image3.jpg)
+![Database Schema Screenshot](./Rewards-API-backend/screenshots/db-image1.jpg)
+![Customer Table](./Rewards-API-backend/screenshots/db-image2.jpg)
+![Transactions Table](./Rewards-API-backend/screenshots/db-image3.jpg)
