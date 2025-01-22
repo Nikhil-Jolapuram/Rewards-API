@@ -1,0 +1,48 @@
+Example: GET /api/rewards
+
+Response:
+
+{
+  "customerId": 12345,
+  "monthlyPoints": {
+    "January": 90,
+    "February": 40
+  },
+  "totalPoints": 130,
+  "transactions": [
+    {
+      "id": 1,
+      "timestamp": "2023-01-15T10:00:00",
+      "amount": 120.00
+    },
+    {
+      "id": 2,
+      "timestamp": "2023-02-10T15:30:00",
+      "amount": 90.00
+    }
+  ]
+}
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+
+Example: GET /api/rewards/2023/01?customerId=12345
+
+Response:
+
+{
+  "customerId": 12345,
+  "monthlyPoints": {
+    "January": 150
+  },
+  "totalPoints": 150,
+  "transactions": [
+    {
+      "id": 1,
+      "timestamp": "2023-01-15T10:00:00",
+      "amount": 120.50
+    }
+  ]
+}
+

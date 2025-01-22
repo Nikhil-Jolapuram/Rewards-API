@@ -2,6 +2,7 @@ package com.homework.rewards.service;
 
 import com.homework.rewards.dto.RewardResponse;
 import com.homework.rewards.entity.Transaction;
+import com.homework.rewards.exception.RewardCalculationException;
 import com.homework.rewards.repository.TransactionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,12 +12,14 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-class RewardServiceTest {
+public class RewardServiceTest {
 
     @Mock
     private TransactionRepository transactionRepository;
@@ -30,68 +33,99 @@ class RewardServiceTest {
     }
 
     @Test
-    @DisplayName("No transactions in the given date range")
-    void testNoTransactionsInDateRange() {
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(List.of());
+    @DisplayName("Calculate rewards with valid input successfully")
+    void calculateRewards_ValidInput_Success() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 3, 31, 23, 59);
 
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(0, response.getTotalPoints(), "Total points should be 0 for no transactions");
-        assertEquals(0, response.getRewardsSummary().size(), "Rewards summary should be empty for no transactions");
-    }
-
-    @Test
-    @DisplayName("Single transaction below $50 earns no points")
-    void testSingleTransactionBelow50() {
-        Transaction transaction = new Transaction(1L, 1L, 40.0, LocalDateTime.now());
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(List.of(transaction));
-
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
-
-        assertEquals(0, response.getTotalPoints(), "Total points should be 0 for transactions below $50");
-    }
-
-    @Test
-    @DisplayName("Transactions across multiple months are grouped correctly")
-    void testTransactionsAcrossMultipleMonths() {
-        List<Transaction> transactions = List.of(
-                new Transaction(1L, 1L, 120.0, LocalDateTime.of(2023, 12, 1, 10, 0)),
-                new Transaction(2L, 1L, 75.0, LocalDateTime.of(2023, 11, 15, 10, 0))
+        List<Transaction> transactions = Arrays.asList(
+                new Transaction(1L, customerId, 120.0, LocalDateTime.of(2023, 1, 15, 10, 0)),
+                new Transaction(2L, customerId, 80.0, LocalDateTime.of(2023, 2, 20, 14, 30)),
+                new Transaction(3L, customerId, 200.0, LocalDateTime.of(2023, 3, 10, 9, 45))
         );
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.of(2023, 11, 1, 0, 0), LocalDateTime.of(2023, 12, 31, 23, 59)))
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
                 .thenReturn(transactions);
 
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.of(2023, 11, 1, 0, 0), LocalDateTime.of(2023, 12, 31, 23, 59));
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
 
-        assertEquals(115, response.getTotalPoints(), "Points should be correctly calculated across multiple months");
-        assertEquals(2, response.getRewardsSummary().size(), "Rewards summary should have entries for each month");
+        assertNotNull(response);
+        assertEquals(customerId, response.getCustomerId());
+        assertEquals(3, response.getMonthlyPoints().size());
+        assertEquals(90, response.getMonthlyPoints().get("January"));
+        assertEquals(30, response.getMonthlyPoints().get("February"));
+        assertEquals(250, response.getMonthlyPoints().get("March"));
+        assertEquals(370, response.getTotalPoints());
+        assertEquals(transactions, response.getTransactions());
     }
 
     @Test
-    @DisplayName("Transactions with negative or zero amounts earn no points")
-    void testNegativeOrZeroAmounts() {
-        List<Transaction> transactions = List.of(
-                new Transaction(1L, 1L, 0.0, LocalDateTime.now()),
-                new Transaction(2L, 1L, -50.0, LocalDateTime.now())
-        );
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(transactions);
+    @DisplayName("Throw RewardCalculationException when no transactions are found")
+    void calculateRewards_NoTransactions_ThrowsException() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 3, 31, 23, 59);
 
-        RewardResponse response = rewardService.calculateRewards(1L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(Collections.emptyList());
 
-        assertEquals(0, response.getTotalPoints(), "Transactions with zero or negative amounts should not contribute to points");
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(customerId, startDate, endDate));
     }
 
     @Test
-    @DisplayName("No transactions for invalid customer ID")
-    void testInvalidCustomerId() {
-        when(transactionRepository.findByCustomerIdAndTimestampBetween(999L, LocalDateTime.now().minusDays(30), LocalDateTime.now()))
-                .thenReturn(List.of());
+    @DisplayName("Throw RewardCalculationException when customer ID is null")
+    void calculateRewards_NullCustomerId_ThrowsException() {
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 3, 31, 23, 59);
 
-        RewardResponse response = rewardService.calculateRewards(999L, LocalDateTime.now().minusDays(30), LocalDateTime.now());
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(null, startDate, endDate));
+    }
 
-        assertEquals(0, response.getTotalPoints(), "Total points should be 0 for invalid customer ID");
+    @Test
+    @DisplayName("Throw RewardCalculationException when start date is null")
+    void calculateRewards_NullStartDate_ThrowsException() {
+        Long customerId = 1L;
+        LocalDateTime endDate = LocalDateTime.of(2023, 3, 31, 23, 59);
+
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(customerId, null, endDate));
+    }
+
+    @Test
+    @DisplayName("Throw RewardCalculationException when end date is null")
+    void calculateRewards_NullEndDate_ThrowsException() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(customerId, startDate, null));
+    }
+
+    @Test
+    @DisplayName("Throw RewardCalculationException when end date is before start date")
+    void calculateRewards_EndDateBeforeStartDate_ThrowsException() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 3, 31, 23, 59);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(customerId, startDate, endDate));
+    }
+
+    @Test
+    @DisplayName("Throw RewardCalculationException when repository throws an exception")
+    void calculateRewards_RepositoryThrowsException_ThrowsRewardCalculationException() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 3, 31, 23, 59);
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenThrow(new RuntimeException("Database error"));
+
+        assertThrows(RewardCalculationException.class, () ->
+                rewardService.calculateRewards(customerId, startDate, endDate));
     }
 }

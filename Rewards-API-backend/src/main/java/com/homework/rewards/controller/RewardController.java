@@ -21,4 +21,14 @@ public class RewardController {
                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate) {
         return rewardService.calculateRewards(customerId, startDate, endDate);
     }
+
+    @GetMapping("/{year}/{month}")
+    public RewardResponse getRewardsByMonth(
+            @PathVariable int year,
+            @PathVariable int month,
+            @RequestParam Long customerId) {
+        LocalDateTime startDate = LocalDateTime.of(year, month, 1, 0, 0);
+        LocalDateTime endDate = startDate.plusMonths(1).minusSeconds(1);
+        return rewardService.calculateRewards(customerId, startDate, endDate);
+    }
 }
