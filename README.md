@@ -89,3 +89,9 @@ cd Rewards-API-backend
 . There is also a UI developed which will test REST API endpoint you need to provide details such as customer ID and the date range
 
 . Validation is also performed for these fields.
+
+## Database
+
+![Alt text](./Rewards-API-backend/screenshots/db-image1.jpg)
+![Alt text](./Rewards-API-backend/screenshots/db-image2.jpg)
+![Alt text](./Rewards-API-backend/screenshots/db-image3.jpg)
