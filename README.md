@@ -42,25 +42,66 @@ Calculate Rewards for a Customer
 
 {
   "customerId": 123,
-  "startDate": "2023-10-01",
-  "endDate": "2023-12-31"
+  "startDate": "2023-10-01T00:00:00",
+  "endDate": "2023-12-31T23:59:59"
 }
 
 ### Response:
 
 {
-  "customer": {
-    "id": 123,
-    "name": "John Doe",
-    "email": "john.doe@example.com"
-  },
-  "monthlyRewards": {
+  "customerId": 123,
+  "monthlyPoints": {
     "October": 150,
     "November": 200,
     "December": 100
   },
-  "totalRewards": 450
+  "totalPoints": 450,
+  "transactions": [
+    {
+      "transactionId": 1,
+      "amount": 120.0,
+      "date": "2023-10-15T10:00:00"
+    },
+    {
+      "transactionId": 2,
+      "amount": 80.0,
+      "date": "2023-11-20T14:30:00"
+    }
+  ]
 }
+
+Calculate Rewards for a Customer (By Month)
+
+### Endpoint: /api/rewards/{year}/{month}
+### Method: GET
+### Path Variables:
+
+year: The year for which rewards are calculated.
+month: The month for which rewards are calculated.
+
+### Request Body:
+
+{
+  "customerId": 123
+}
+
+### Response:
+
+{
+  "customerId": 123,
+  "monthlyPoints": {
+    "November": 200
+  },
+  "totalPoints": 200,
+  "transactions": [
+    {
+      "transactionId": 3,
+      "amount": 150.0,
+      "date": "2023-11-05T12:00:00"
+    }
+  ]
+}
+
 
 ### Setup Instructions
 

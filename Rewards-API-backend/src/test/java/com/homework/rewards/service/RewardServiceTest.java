@@ -128,4 +128,101 @@ public class RewardServiceTest {
         assertThrows(RewardCalculationException.class, () ->
                 rewardService.calculateRewards(customerId, startDate, endDate));
     }
+
+    @Test
+    @DisplayName("Calculate rewards for a transaction amount equal to $100")
+    void calculateRewards_TransactionAmount100() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 31, 23, 59);
+
+        Transaction transaction = new Transaction(1L, customerId, 100.0, LocalDateTime.of(2023, 1, 10, 10, 0));
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(Collections.singletonList(transaction));
+
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
+
+        assertNotNull(response);
+        assertEquals(50, response.getMonthlyPoints().get("January")); // 50 points for $100
+        assertEquals(50, response.getTotalPoints());
+    }
+
+    @Test
+    @DisplayName("Calculate rewards for a transaction amount equal to $50")
+    void calculateRewards_TransactionAmount50() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 31, 23, 59);
+
+        Transaction transaction = new Transaction(1L, customerId, 50.0, LocalDateTime.of(2023, 1, 10, 10, 0));
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(Collections.singletonList(transaction));
+
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
+
+        assertNotNull(response);
+        assertEquals(0, response.getMonthlyPoints().get("January")); // No points for $50
+        assertEquals(0, response.getTotalPoints());
+    }
+
+    @Test
+    @DisplayName("Calculate rewards for transactions with amounts $50 and $100")
+    void calculateRewards_TransactionsAmount50And100() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 31, 23, 59);
+
+        List<Transaction> transactions = Arrays.asList(
+                new Transaction(1L, customerId, 50.0, LocalDateTime.of(2023, 1, 10, 10, 0)),
+                new Transaction(2L, customerId, 100.0, LocalDateTime.of(2023, 1, 15, 12, 0))
+        );
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(transactions);
+
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
+
+        assertNotNull(response);
+        assertEquals(50, response.getMonthlyPoints().get("January")); // 50 points for $100, 0 for $50
+        assertEquals(50, response.getTotalPoints());
+    }
+
+    @Test
+    @DisplayName("Calculate rewards for a transaction amount equal to $120")
+    void calculateRewards_TransactionAmount120() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 31, 23, 59);
+
+        Transaction transaction = new Transaction(1L, customerId, 120.0, LocalDateTime.of(2023, 1, 20, 15, 0));
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(Collections.singletonList(transaction));
+
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
+
+        assertNotNull(response);
+        assertEquals(90, response.getMonthlyPoints().get("January")); // 90 points for $120
+        assertEquals(90, response.getTotalPoints());
+    }
+
+    @Test
+    @DisplayName("Calculate rewards with transactions on boundary dates")
+    void calculateRewards_BoundaryDates_Success() {
+        Long customerId = 1L;
+        LocalDateTime startDate = LocalDateTime.of(2023, 1, 1, 0, 0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1, 31, 23, 59);
+
+        List<Transaction> transactions = Collections.singletonList(
+                new Transaction(1L, customerId, 50.0, LocalDateTime.of(2023, 1, 1, 0, 0))
+        );
+
+        when(transactionRepository.findByCustomerIdAndTimestampBetween(customerId, startDate, endDate))
+                .thenReturn(transactions);
+
+        RewardResponse response = rewardService.calculateRewards(customerId, startDate, endDate);
+        assertEquals(0, response.getMonthlyPoints().get("January")); // No points for $50 transaction
+    }
 }
